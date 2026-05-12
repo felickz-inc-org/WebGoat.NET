@@ -5793,7 +5793,25 @@ function remove( elem, selector, keepData ) {
 
 jQuery.extend( {
 	htmlPrefilter: function( html ) {
-		return html.replace( rxhtmlTag, "<$1></$2>" );
+		// Safely handle self-closing tags using a controlled DOM-based approach
+		var tempDiv = document.createElement("div");
+		tempDiv.innerHTML = html;
+		
+		// Process child nodes to handle self-closing tags explicitly
+		Array.from(tempDiv.childNodes).forEach(function(node) {
+			if (node.nodeType === 1 && node.outerHTML.endsWith("/>")) {
+				// Convert self-closing tag to an open/close tag pair
+				var tagName = node.tagName.toLowerCase();
+				var newElement = document.createElement(tagName);
+				Array.from(node.attributes).forEach(function(attr) {
+					newElement.setAttribute(attr.name, attr.value);
+				});
+				newElement.innerHTML = node.innerHTML;
+				node.replaceWith(newElement);
+			}
+		});
+		
+		return tempDiv.innerHTML;
 	},
 
 	clone: function( elem, dataAndEvents, deepDataAndEvents ) {
